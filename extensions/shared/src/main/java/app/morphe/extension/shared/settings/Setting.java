@@ -161,6 +161,25 @@ public abstract class Setting<T> {
     }
 
     /**
+     * Callback that can block a {@link #save(Object)} call before the new value is persisted.
+     */
+    public interface SaveInterceptor {
+        /**
+         * @return true to block the save. The new value is discarded and the setting keeps its current value.
+         */
+        boolean interceptSave(Setting<?> setting, Object newValue);
+    }
+
+    private static final List<SaveInterceptor> saveInterceptors = new ArrayList<>();
+
+    /**
+     * Adds an interceptor that can block {@link #save(Object)} calls.
+     */
+    public static void addSaveInterceptor(SaveInterceptor interceptor) {
+        saveInterceptors.add(Objects.requireNonNull(interceptor));
+    }
+
+    /**
      * All settings that were instantiated.
      * When a new setting is created, it is automatically added to this list.
      */
@@ -402,6 +421,12 @@ public abstract class Setting<T> {
     public final void save(T newValue) {
         if (value.equals(newValue)) {
             return;
+        }
+
+        for (SaveInterceptor interceptor : saveInterceptors) {
+            if (interceptor.interceptSave(this, newValue)) {
+                return; // Save blocked by interceptor.
+            }
         }
 
         // Must set before saving to preferences (otherwise importing fails to update UI correctly).

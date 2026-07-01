@@ -29,6 +29,7 @@ import app.morphe.extension.shared.utils.Logger;
 import app.morphe.extension.shared.utils.StringTrieSearch;
 import app.morphe.extension.shared.utils.TrieSearch;
 import app.morphe.extension.shared.utils.Utils;
+import app.morphe.extension.youtube.hardlock.BanListManager;
 import app.morphe.extension.youtube.settings.Settings;
 import app.morphe.extension.youtube.shared.RootView;
 
@@ -195,6 +196,20 @@ public final class KeywordContentFilter extends Filter {
      * Allows changing the keywords without restarting the app.
      */
     private volatile String lastKeywordPhrasesParsed;
+
+    /**
+     * The last {@link BanListManager#getVersion()} value merged into {@link #bufferSearch}.
+     * Used to detect ban list changes without re-reading and HMAC-verifying
+     * SharedPreferences on every {@link #isFiltered} call.
+     */
+    private volatile int lastBanListVersionParsed = -1;
+
+    /**
+     * Whether the ban list currently has entries. Set by {@link #parseKeywords()} and
+     * used to force filtering active even if the user has {@link Settings#HIDE_KEYWORD_CONTENT_HOME}
+     * and friends all turned off, since the ban list is meant to be irreversible.
+     */
+    private volatile boolean banListActive;
 
     private volatile ByteTrieSearch bufferSearch;
 
@@ -495,14 +510,21 @@ public final class KeywordContentFilter extends Filter {
 
     private synchronized void parseKeywords() { // Must be synchronized since Litho is multi-threaded.
         String rawKeywords = Settings.HIDE_KEYWORD_CONTENT_PHRASES.get();
+        int banListVersion = BanListManager.getVersion();
 
-        if (rawKeywords == lastKeywordPhrasesParsed) {
+        if (rawKeywords == lastKeywordPhrasesParsed && banListVersion == lastBanListVersionParsed) {
             Logger.printDebug(() -> "Using previously initialized search");
             return; // Another thread won the race, and search is already initialized.
         }
 
+        String banListPhrases = BanListManager.getBanListPhrases(Utils.getContext());
+        banListActive = !banListPhrases.isEmpty();
+        String combinedKeywords = banListPhrases.isEmpty()
+                ? rawKeywords
+                : rawKeywords.isEmpty() ? banListPhrases : rawKeywords + "\n" + banListPhrases;
+
         ByteTrieSearch search = new ByteTrieSearch();
-        String[] split = rawKeywords.split("\n");
+        String[] split = combinedKeywords.split("\n");
         if (split.length != 0) {
             // Linked Set so log statement are more organized and easier to read.
             // Map is: Phrase -> isWholeWord
@@ -600,6 +622,7 @@ public final class KeywordContentFilter extends Filter {
         timeToResumeFiltering = 0;
         filteredVideosPercentage = 0;
         lastKeywordPhrasesParsed = rawKeywords; // Must set last.
+        lastBanListVersionParsed = banListVersion;
     }
 
     public KeywordContentFilter() {
@@ -623,6 +646,11 @@ public final class KeywordContentFilter extends Filter {
             timeToResumeFiltering = 0;
             filteredVideosPercentage = 0;
             Logger.printDebug(() -> "Resuming keyword filtering");
+        }
+
+        // The ban list is irreversible and must be enforced regardless of the toggles below.
+        if (banListActive) {
+            return true;
         }
 
         final boolean hideHome = Settings.HIDE_KEYWORD_CONTENT_HOME.get();
@@ -696,8 +724,9 @@ public final class KeywordContentFilter extends Filter {
         }
 
         // Field is intentionally compared using reference equality.
-        if (Settings.HIDE_KEYWORD_CONTENT_PHRASES.get() != lastKeywordPhrasesParsed) {
-            // User changed the keywords or whole word setting.
+        if (Settings.HIDE_KEYWORD_CONTENT_PHRASES.get() != lastKeywordPhrasesParsed
+                || BanListManager.getVersion() != lastBanListVersionParsed) {
+            // User changed the keywords/whole word setting, or a ban list term was added.
             parseKeywords();
         }
 

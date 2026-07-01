@@ -52,6 +52,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import app.morphe.extension.shared.utils.Logger;
 import app.morphe.extension.shared.utils.Utils;
+import app.morphe.extension.youtube.hardlock.BanListManager;
 import app.morphe.extension.youtube.patches.utils.AlwaysRepeatPatch;
 
 /**
@@ -274,6 +275,8 @@ public final class VideoInformation {
                         newlyLoadedLiveStreamValue +
                         "'"
         );
+
+        BanListManager.onChannelDetected(newlyLoadedChannelId, newlyLoadedChannelName, Utils.getContext());
     }
 
     /**
