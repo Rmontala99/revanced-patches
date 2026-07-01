@@ -7,9 +7,11 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.Setting;
 import app.morphe.extension.shared.utils.Logger;
 import app.morphe.extension.shared.utils.Utils;
+import app.morphe.extension.youtube.settings.Settings;
 
 /**
  * Freezes settings in the more restrictive direction only.
@@ -26,6 +28,20 @@ public final class PermanentLockManager {
     private static final String KEY_LOCKED_FEATURES = "locked_features";
     private static final String LOCK_TOAST_MESSAGE =
             "Este ajuste está bloqueado permanentemente y no se puede desactivar.";
+
+    /**
+     * The settings permanently fixed to their most restrictive value ({@code true}) by
+     * {@link #initialize(Context)}: Shorts, home feed/recommendations, and autoplay.
+     */
+    private static final BooleanSetting[] HARD_LOCKED_SETTINGS = {
+            Settings.HIDE_SHORTS_SHELF,
+            Settings.HIDE_SHORTS_NAVIGATION_BAR,
+            Settings.HIDE_SHORTS_TOOLBAR,
+            Settings.HIDE_NAVIGATION_HOME_BUTTON,
+            Settings.HIDE_RELATED_VIDEOS,
+            Settings.HIDE_PLAYER_AUTOPLAY_BUTTON,
+            Settings.HIDE_AUTOPLAY_PREVIEW,
+    };
 
     private static volatile boolean interceptorRegistered = false;
 
@@ -100,9 +116,24 @@ public final class PermanentLockManager {
     }
 
     /**
+     * Forces {@link #HARD_LOCKED_SETTINGS} to their restrictive value and locks them,
+     * so they can never be turned back off from the YouTube settings.
+     */
+    private static void enforceHardLockedSettings(Context context) {
+        String[] keys = new String[HARD_LOCKED_SETTINGS.length];
+        for (int i = 0; i < HARD_LOCKED_SETTINGS.length; i++) {
+            BooleanSetting setting = HARD_LOCKED_SETTINGS[i];
+            setting.save(true);
+            keys[i] = setting.key;
+        }
+        activate(context, keys);
+    }
+
+    /**
      * Injection point - called from Application.onCreate via PermanentLockPatch.
      * Registers the {@link Setting.SaveInterceptor} that blocks turning a locked
-     * boolean setting back to {@code false}.
+     * boolean setting back to {@code false}, and fixes {@link #HARD_LOCKED_SETTINGS}
+     * to their restrictive value.
      */
     public static synchronized void initialize(Context context) {
         if (interceptorRegistered) {
@@ -121,5 +152,7 @@ public final class PermanentLockManager {
             Utils.showToastShort(LOCK_TOAST_MESSAGE);
             return true;
         });
+
+        enforceHardLockedSettings(context);
     }
 }

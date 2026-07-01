@@ -45,6 +45,19 @@ restricciones del proyecto. No usa permisos Android peligrosos.
   valor restrictivo.
 - Anti-tamper: fail-closed. Si el HMAC no verifica, `isLocked()` devuelve
   `true` para cualquier clave.
+- `PermanentLockManager.HARD_LOCKED_SETTINGS` fija en `true` y bloquea permanentemente:
+  - Shorts: `HIDE_SHORTS_SHELF`, `HIDE_SHORTS_NAVIGATION_BAR`, `HIDE_SHORTS_TOOLBAR`.
+  - Feed/recomendaciones: `HIDE_NAVIGATION_HOME_BUTTON` (quita la pestaña Home),
+    `HIDE_RELATED_VIDEOS` (quita vídeos relacionados/recomendados bajo el player).
+  - Autoplay: `HIDE_PLAYER_AUTOPLAY_BUTTON`, `HIDE_AUTOPLAY_PREVIEW`.
+
+  **Limitación conocida:** este fork no expone ningún `Setting` que controle el
+  interruptor nativo de "reproducción automática" de YouTube (ese toggle vive en
+  las preferencias propias de la app, fuera del sistema `Setting`/`SharedPrefCategory`
+  de ReVanced). Lo que se bloquea aquí es la UI relacionada (el botón de autoplay
+  en el reproductor y la previsualización del siguiente vídeo), no la reproducción
+  automática en sí. Si se necesita bloquear el comportamiento real, hace falta un
+  patch nuevo que intercepte el valor nativo de autoplay.
 
 ## Almacenamiento y anti-tamper
 
