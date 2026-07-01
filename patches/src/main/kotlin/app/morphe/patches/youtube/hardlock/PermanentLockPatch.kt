@@ -16,7 +16,8 @@ private const val EXTENSION_CLASS_DESCRIPTOR =
  */
 @Suppress("unused")
 val permanentLockPatch = bytecodePatch(
-    description = "permanentLockPatch",
+    "HardLock: Permanent lock",
+    "Freezes Shorts, home feed, and autoplay-related settings so they can't be turned back off.",
 ) {
     compatibleWith(COMPATIBILITY_YOUTUBE)
 

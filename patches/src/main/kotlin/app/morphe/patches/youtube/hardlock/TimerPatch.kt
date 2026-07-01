@@ -15,7 +15,8 @@ private const val EXTENSION_CLASS_DESCRIPTOR =
  */
 @Suppress("unused")
 val timerPatch = bytecodePatch(
-    description = "timerPatch",
+    "HardLock: Timer",
+    "Starts the mandatory HardLock session timer when the app launches.",
 ) {
     compatibleWith(COMPATIBILITY_YOUTUBE)
 

@@ -79,6 +79,12 @@ patches no importa: cada inserción en el índice 1 empuja hacia abajo lo que ya
 hubiera ahí, así que las tres llamadas terminan siempre después de que el contexto
 se establece en el índice 0.
 
+Cada uno tiene título propio ("HardLock: Timer", "HardLock: Ban list",
+"HardLock: Permanent lock") para que morphe-cli los liste y se puedan
+seleccionar explícitamente con `-e "HardLock: Timer"` etc. al parchear
+(a diferencia de `sharedExtensionPatch`, que no tiene título porque solo
+se usa como dependencia transitiva).
+
 ## Pendiente / fuera de alcance de esta sesión
 
 - No hay UI dentro de los ajustes de YouTube para añadir términos a la lista

@@ -15,7 +15,8 @@ private const val EXTENSION_CLASS_DESCRIPTOR =
  */
 @Suppress("unused")
 val banListPatch = bytecodePatch(
-    description = "banListPatch",
+    "HardLock: Ban list",
+    "Enforces the HardLock irreversible banned terms/channels list.",
 ) {
     compatibleWith(COMPATIBILITY_YOUTUBE)
 
